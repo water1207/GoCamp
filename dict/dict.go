@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 )
 
 type DictRequest struct {
@@ -35,11 +36,11 @@ type DictResponse struct {
 	} `json:"dictionary"`
 }
 
-func main() {
+func query(word string) {
 	client := &http.Client{}
 
 	//var data = strings.NewReader(`{"trans_type":"en2zh","source":"hello"}`)
-	request := DictRequest{TransType: "en2zh", Source: "good"}
+	request := DictRequest{TransType: "en2zh", Source: word}
 	buf, err := json.Marshal(request)
 	if err != nil {
 		log.Fatal(err)
@@ -84,7 +85,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// 防御式编程,若响应状态码不为200
+	// 防御式编程避免后面反序列化为空结构,若响应状态码不为200 打印错误日志
 	if resp.StatusCode != 200 {
 		log.Fatal("bad StatusCode:", resp.StatusCode, "body", string(bodyText))
 	}
@@ -94,5 +95,20 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("%#v", dictResponse)
+	// fmt.Println("%#v", dictResponse)
+	fmt.Println(word, "UK:", dictResponse.Dictionary.Prons.En, "US:", dictResponse.Dictionary.Prons.EnUs)
+	for _, item := range dictResponse.Dictionary.Explanations {
+		fmt.Println(item)
+	}
+}
+
+func main() {
+	if len(os.Args) != 2 {
+		fmt.Fprintf(os.Stderr, `usage: simp;eDict WORD 
+example: simpleDict hello
+		`)
+		os.Exit(1)
+	}
+	word := os.Args[1]
+	query(word)
 }
